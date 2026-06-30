@@ -7,6 +7,7 @@ setup(
     description="Aegis ML Tracking Library (Protected Client)",
     packages=find_packages(),
     include_package_data=True,
+    package_data={'': ['*.pyd', '*.so', '*.dylib', '*.dll']},
     install_requires=[
         "psutil"
     ],
