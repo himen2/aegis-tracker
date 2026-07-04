@@ -26,7 +26,7 @@ from .display.renderer import JupyterRenderer, TerminalRenderer
 from .hooks import AegisKerasCallback, AegisPyTorchHook, AegisSklearnWrapper
 from .transport import AegisHTTP, SmartSender
 
-__version__ = "0.1.0"
+__version__ = "0.2.1"
 
 # Module-level session: set by login()/configure(), used by init()
 _session: dict = {}
