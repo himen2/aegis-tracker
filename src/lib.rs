@@ -1,6 +1,8 @@
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
 use sysinfo::System;
+
+mod sender;
+use sender::RustSender;
 
 #[pyfunction]
 fn get_cpu_percent() -> PyResult<f32> {
@@ -45,5 +47,6 @@ fn get_memory_mb() -> PyResult<HashMap<String, f64>> {
 fn aegis_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_cpu_percent, m)?)?;
     m.add_function(wrap_pyfunction!(get_memory_mb, m)?)?;
+    m.add_class::<RustSender>()?;
     Ok(())
 }

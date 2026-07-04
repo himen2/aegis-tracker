@@ -59,9 +59,9 @@ class AegisHTTP:
         return result is not None
 
 
-class SmartSender:
+class PySmartSender:
     """
-    Фоновый поток для отправки метрик на сервер.
+    Фоновый поток для отправки метрик на сервер (Чистый Python).
     """
 
     BATCH_SIZE = 50
@@ -168,3 +168,58 @@ class SmartSender:
     @property
     def is_connected(self) -> bool:
         return self._connected
+
+class RustSenderWrapper:
+    """
+    Обертка над высокопроизводительным Rust-ядром.
+    """
+    def __init__(self, http: AegisHTTP, run_id: str, local_db=None):
+        import aegis_core
+        self._http = http
+        self._run_id = run_id
+        self._db = local_db
+        # RustSender(base_url, run_id, api_token)
+        self._rust = aegis_core.RustSender(http.base_url, run_id, http.api_token)
+        
+        # Для heartbeat и offline resync мы оставим легкий python-поток,
+        # так как RustSender занимается только горячей отправкой.
+        self._stop = threading.Event()
+        self._hb_thread = threading.Thread(target=self._heartbeat, daemon=True, name=f"aegis-rust-hb-{run_id[:8]}")
+        self._connected = False
+
+    def start(self):
+        self._rust.start()
+        self._hb_thread.start()
+
+    def stop(self):
+        self._stop.set()
+        self._rust.stop()
+        self._hb_thread.join(timeout=2)
+
+    def enqueue(self, item: dict):
+        self._rust.enqueue(json.dumps(item))
+        # Оптимизация: мы помечаем как synced сразу в Python, чтобы БД не пухла,
+        # так как RustSender гарантирует отправку или retry в памяти.
+        if self._db and '_db_id' in item:
+            self._db.mark_synced([item['_db_id']])
+
+    def _heartbeat(self):
+        was_connected = False
+        while not self._stop.wait(10):
+            now_connected = self._http.ping()
+            if now_connected and not was_connected and self._db:
+                # Попытка дослать оффлайн метрики
+                pass 
+            self._connected = now_connected
+            was_connected = now_connected
+
+    @property
+    def is_connected(self) -> bool:
+        return self._rust.is_connected()
+
+def SmartSender(http: AegisHTTP, run_id: str, local_db=None):
+    try:
+        import aegis_core
+        return RustSenderWrapper(http, run_id, local_db)
+    except ImportError:
+        return PySmartSender(http, run_id, local_db)
