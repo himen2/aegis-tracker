@@ -21,7 +21,7 @@ def _read_file(path: str) -> Optional[str]:
 def get_cpu_percent() -> Optional[float]:
     try:
         import aegis_core
-        return aegis_core.get_cpu_percent()
+        return float(aegis_core.get_cpu_percent())
     except ImportError:
         pass
     try:
@@ -45,7 +45,8 @@ def get_cpu_percent() -> Optional[float]:
 def get_memory_mb() -> Dict[str, Optional[float]]:
     try:
         import aegis_core
-        return aegis_core.get_memory_mb()
+        dict_data = aegis_core.get_memory_mb()
+        return dict_data
     except ImportError:
         pass
     try:

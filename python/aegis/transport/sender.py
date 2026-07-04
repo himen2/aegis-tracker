@@ -174,12 +174,15 @@ class RustSenderWrapper:
     Обертка над высокопроизводительным Rust-ядром.
     """
     def __init__(self, http: AegisHTTP, run_id: str, local_db=None):
-        import aegis_core
+        try:
+            import aegis_core
+            self._rust = aegis_core.RustSender(http.base_url, run_id, http.api_token)
+        except ImportError:
+            self._rust = None
+            
         self._http = http
         self._run_id = run_id
         self._db = local_db
-        # RustSender(base_url, run_id, api_token)
-        self._rust = aegis_core.RustSender(http.base_url, run_id, http.api_token)
         
         # Для heartbeat и offline resync мы оставим легкий python-поток,
         # так как RustSender занимается только горячей отправкой.

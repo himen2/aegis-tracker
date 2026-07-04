@@ -19,8 +19,11 @@ tests = [
 ]
 [tool.maturin]
 python-source = "python"
+module-name = "aegis_core"
 exclude = [
     "**/__pycache__",
     "**/*.pyc",
     "**/*.pyo"
 ]
+
+include = ['aegis/**/*']
